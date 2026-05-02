@@ -6,6 +6,7 @@ from pathlib import Path
 
 from transcriber.config import PROFILES
 from transcriber.pipeline import DEFAULT_EXTENSIONS, TranscriberService, TranscriptionSettings
+from transcriber.runtime import ensure_cuda_runtime
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -104,6 +105,8 @@ def main(argv: list[str] | None = None) -> int:
         model_size=args.model,
         parallel_files=args.parallel_files,
     )
+
+    ensure_cuda_runtime(profile.device == "cuda")
 
     logging.info(
         "Perfil=%s | modelo=%s | device=%s | paralelo=%s | output=%s",

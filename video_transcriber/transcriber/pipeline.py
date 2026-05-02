@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
+from time import monotonic
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -60,6 +61,7 @@ class TranscriberService:
         skipped = 0
         failed = 0
         pending: list[tuple[Path, Path]] = []
+        started_at = monotonic()
 
         for media_path in iter_media_files(self.settings.input_dir, self.settings.extensions):
             destination = resolve_output_path(
@@ -78,18 +80,30 @@ class TranscriberService:
         if not pending:
             return processed, skipped, failed
 
+        total = len(pending)
         LOGGER.info(
-            "Archivos pendientes=%s | modo=%s | workers=%s",
-            len(pending),
+            "Archivos pendientes=%s | modo=%s | workers=%s | ya_existentes=%s",
+            total,
             "paralelo" if self.settings.effective_parallel_files > 1 else "serie",
             self.settings.effective_parallel_files,
+            skipped,
         )
 
         if self.settings.effective_parallel_files == 1:
-            for media_path, destination in pending:
+            for index, (media_path, destination) in enumerate(pending, start=1):
                 try:
-                    self.transcribe_one(media_path, destination)
+                    result = self.transcribe_one(media_path, destination)
                     processed += 1
+                    self.log_progress(
+                        current=index,
+                        total=total,
+                        processed=processed,
+                        failed=failed,
+                        skipped=skipped,
+                        media_path=media_path,
+                        result=result,
+                        started_at=started_at,
+                    )
                 except Exception:
                     failed += 1
                     LOGGER.exception("Fallo transcribiendo %s", media_path)
@@ -101,18 +115,30 @@ class TranscriberService:
                 for media_path, destination in pending
             }
 
+            completed = 0
             for future in as_completed(future_map):
                 media_path = future_map[future]
+                completed += 1
                 try:
-                    future.result()
+                    result = future.result()
                     processed += 1
+                    self.log_progress(
+                        current=completed,
+                        total=total,
+                        processed=processed,
+                        failed=failed,
+                        skipped=skipped,
+                        media_path=media_path,
+                        result=result,
+                        started_at=started_at,
+                    )
                 except Exception:
                     failed += 1
                     LOGGER.exception("Fallo transcribiendo %s", media_path)
 
         return processed, skipped, failed
 
-    def transcribe_one(self, media_path: Path, destination: Path) -> None:
+    def transcribe_one(self, media_path: Path, destination: Path) -> dict[str, str | float]:
         LOGGER.info("Transcribiendo %s", media_path)
         segments, info = self.model.transcribe(
             str(media_path),
@@ -127,9 +153,40 @@ class TranscriberService:
             for segment in segments
         ]
         write_srt(serialized_segments, destination)
+        return {
+            "destination": str(destination),
+            "language": info.language,
+            "duration": info.duration,
+        }
+
+    def log_progress(
+        self,
+        *,
+        current: int,
+        total: int,
+        processed: int,
+        failed: int,
+        skipped: int,
+        media_path: Path,
+        result: dict[str, str | float],
+        started_at: float,
+    ) -> None:
+        percent = (current / total) * 100 if total else 100.0
+        elapsed = monotonic() - started_at
+        destination = result["destination"]
+        language = result["language"]
+        duration = result["duration"]
         LOGGER.info(
-            "SRT generado en %s | idioma=%s | duracion=%.2fs",
+            "Progreso %s/%s (%.1f%%) | ok=%s | fail=%s | skip=%s | archivo=%s | idioma=%s | duracion=%.2fs | salida=%s | transcurrido=%.1fs",
+            current,
+            total,
+            percent,
+            processed,
+            failed,
+            skipped,
+            media_path.name,
+            language,
+            duration,
             destination,
-            info.language,
-            info.duration,
+            elapsed,
         )

@@ -183,6 +183,71 @@ cd video_transcriber
 docker build -t curso-transcriber .
 ```
 
+Si la vas a subir a Docker Hub para Vast.ai:
+
+```bash
+docker build -t jeisonrosario66/curso-transcriber:0.2 .
+docker push jeisonrosario66/curso-transcriber:0.2
+```
+
+La version `0.2` cambia la base a `python:3.11-slim-bookworm` e incluye paquetes que Vast espera cuando levanta una instancia en modo `Interactive shell server, SSH`.
+
+Si quieres una version pensada especificamente para evitar errores de `libcublas.so.12` y `cudnn` en Vast:
+
+```bash
+docker build -t jeisonrosario66/curso-transcriber:0.3 .
+docker push jeisonrosario66/curso-transcriber:0.3
+```
+
+La version `0.3` ademas:
+
+- instala `nvidia-cublas-cu12`
+- instala `nvidia-cudnn-cu12`
+- exporta `LD_LIBRARY_PATH` automaticamente en el arranque
+
+Si quieres una version mas liviana para Vast, pero que siga autocorrigiendo el runtime CUDA al arrancar:
+
+```bash
+docker build -t jeisonrosario66/curso-transcriber:0.4 .
+docker push jeisonrosario66/curso-transcriber:0.4
+```
+
+La version `0.4`:
+
+- no mete `cublas/cudnn` dentro de la imagen final
+- instala esas librerias solo al arrancar si `PROFILE=vast`
+- sigue exportando `LD_LIBRARY_PATH` automaticamente
+- deberia subir y bajar mucho mas rapido que `0.3`
+
+Si quieres una version mas robusta para trabajar por SSH dentro de Vast y que ya tenga un `.env` basico dentro de `/app/.env`, usa:
+
+```bash
+docker build -t jeisonrosario66/curso-transcriber:0.5 .
+docker push jeisonrosario66/curso-transcriber:0.5
+```
+
+La version `0.5`:
+
+- incluye `nano`
+- copia un `.env` base dentro de `/app/.env`
+- toma variables de entorno de Vast por encima del archivo
+- instala `cublas/cudnn` bajo demanda tambien cuando ejecutas `python run_transcriber.py` manualmente por SSH
+
+Si quieres la version recomendada final para Vast, ligera pero mas robusta y con progreso visible durante la transcripcion, usa:
+
+```bash
+docker build -t jeisonrosario66/curso-transcriber:0.6 .
+docker push jeisonrosario66/curso-transcriber:0.6
+```
+
+La version `0.6`:
+
+- mantiene la imagen liviana como `0.5`
+- resuelve CUDA tambien cuando ejecutas CLI manual (`python run_transcriber.py` o `python transtribir.py`)
+- trae `.env` base en `/app/.env`
+- incluye `nano`
+- muestra progreso por archivo con porcentaje, conteos `ok/fail/skip`, duracion y tiempo transcurrido
+
 Correrla montando carpetas locales:
 
 ```bash
@@ -202,6 +267,82 @@ docker run --rm \
   -v /workspace/subtitulos:/data/output \
   curso-transcriber /data/input --profile vast --model large-v3 --parallel-files 2 -o /data/output
 ```
+
+## Vast.ai
+
+### Modo recomendado si no quieres depender de SSH
+
+Usa `Docker ENTRYPOINT` y asegurate de que Cloud Sync copie los videos a:
+
+```text
+/data/input
+```
+
+y que la salida quede en:
+
+```text
+/data/output
+```
+
+Variables recomendadas:
+
+- `INPUT_DIR=/data/input`
+- `OUTPUT_DIR=/data/output`
+- `PROFILE=vast`
+- `MODEL=large-v3`
+- `LANGUAGE=auto`
+- `OVERWRITE=false`
+- `PARALLEL_FILES=2`
+
+### Modo SSH en Vast
+
+Si quieres usar `Interactive shell server, SSH`, usa la imagen nueva:
+
+- `jeisonrosario66/curso-transcriber:0.2`
+
+Esta version preinstala:
+
+- `openssh-client`
+- `openssh-server`
+- `tmux`
+- `sudo`
+- `rsync`
+- `software-properties-common`
+
+Eso mejora la compatibilidad con la capa SSH que Vast construye por encima de tu contenedor.
+
+Si vas a usar GPU real para transcribir dentro de Vast, usa mejor:
+
+- `jeisonrosario66/curso-transcriber:0.3`
+
+porque esa version deja resuelto el runtime de `cublas/cudnn` para `faster-whisper`.
+
+Si quieres reducir mucho el tiempo de pull de la imagen, usa mejor:
+
+- `jeisonrosario66/curso-transcriber:0.4`
+
+porque esa version descarga `cublas/cudnn` al iniciar en vez de hornearlo dentro de la imagen.
+
+Si quieres ademas un `.env` ya preparado dentro del contenedor y mejor experiencia por SSH, usa:
+
+- `jeisonrosario66/curso-transcriber:0.5`
+
+Si quieres la opcion mas completa y recomendada para tus pruebas actuales en Vast, usa:
+
+- `jeisonrosario66/curso-transcriber:0.6`
+
+### Nota importante sobre Cloud Sync
+
+Si sincronizas Drive a `/data/`, el contenedor no encontrara archivos si `INPUT_DIR` apunta a `/data/input`.
+
+Haz el sync asi:
+
+- origen Drive: por ejemplo `/cursos_sin_datos/AOJ`
+- destino en la instancia: `/data/input`
+
+Y luego recupera resultados desde:
+
+- `/data/output`
 
 ## Carpeta sugerida para pruebas
 

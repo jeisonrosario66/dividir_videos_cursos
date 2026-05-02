@@ -5,9 +5,11 @@ Pensado para pruebas locales sin repetir un comando largo.
 
 from __future__ import annotations
 
+import os
+import sys
 from pathlib import Path
 
-from transcriber.cli import main
+from transcriber.runtime import ensure_cuda_runtime
 
 
 def load_env_file(env_path: Path) -> dict[str, str]:
@@ -57,7 +59,34 @@ def build_argv_from_env(values: dict[str, str]) -> list[str]:
     return argv
 
 
+def merge_env_sources(file_values: dict[str, str]) -> dict[str, str]:
+    merged = dict(file_values)
+    for key in (
+        "INPUT_DIR",
+        "OUTPUT_DIR",
+        "PROFILE",
+        "MODEL",
+        "LANGUAGE",
+        "OVERWRITE",
+        "PARALLEL_FILES",
+    ):
+        env_value = os.environ.get(key)
+        if env_value is not None and env_value != "":
+            merged[key] = env_value
+    return merged
+
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        from transcriber.cli import main
+
+        ensure_cuda_runtime(os.environ.get("PROFILE") == "vast")
+        raise SystemExit(main(sys.argv[1:]))
+
     env_path = Path(__file__).with_name(".env")
-    values = load_env_file(env_path)
+    values = merge_env_sources(load_env_file(env_path))
+    ensure_cuda_runtime(values.get("PROFILE", "").strip() == "vast")
+
+    from transcriber.cli import main
+
     raise SystemExit(main(build_argv_from_env(values)))
