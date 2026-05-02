@@ -56,11 +56,12 @@ def _preload_library(patterns: list[str], base_dir: str) -> None:
             return
 
 
-def ensure_cuda_runtime(enabled: bool) -> None:
+def ensure_cuda_runtime(enabled: bool, *, install: bool = True) -> None:
     if not enabled:
         return
 
-    _ensure_cuda_packages_installed()
+    if install:
+        _ensure_cuda_packages_installed()
 
     cublas_path = _module_path("nvidia.cublas.lib")
     cudnn_path = _module_path("nvidia.cudnn.lib")

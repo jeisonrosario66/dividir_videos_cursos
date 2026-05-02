@@ -3,6 +3,10 @@ FROM python:3.11-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+LABEL org.opencontainers.image.title="curso-transcriber" \
+      org.opencontainers.image.description="Transcriptor de videos a SRT con Faster-Whisper, optimizado para Vast.ai, SSH y Cloud Sync." \
+      org.opencontainers.image.version="0.7"
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        ffmpeg \

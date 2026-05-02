@@ -99,6 +99,12 @@ Si quieres controlar el paralelismo desde `.env`, agrega por ejemplo:
 PARALLEL_FILES=1
 ```
 
+Si quieres que el runner emita un parte de estado aunque no termine ningun archivo durante un rato:
+
+```env
+STATUS_INTERVAL_SECONDS=30
+```
+
 ## Uso local directo
 
 Para una maquina modesta conviene empezar con `tiny` o `base`.
@@ -146,7 +152,8 @@ Suele ser una buena opcion cuando quieres muy buena velocidad con calidad alta.
 Esta herramienta ya puede transcribir varios archivos a la vez.
 
 - Usa `--parallel-files N` para definir cuantos videos procesar en paralelo.
-- Internamente se apoya en `num_workers` de `faster-whisper`, pensado para llamadas concurrentes desde varios threads.
+- En `0.7`, cuando usas GPU y `parallel-files > 1`, el runner cambia a procesos separados para que cada worker cargue su propio modelo y aproveche mejor la VRAM.
+- En CPU o en modo serie, sigue usando el camino simple del proceso principal.
 - Mas paralelismo mejora el throughput total, pero aumenta el consumo de VRAM y RAM.
 
 Ejemplos:
@@ -248,6 +255,22 @@ La version `0.6`:
 - incluye `nano`
 - muestra progreso por archivo con porcentaje, conteos `ok/fail/skip`, duracion y tiempo transcurrido
 
+Si quieres una version enfocada en sacar mas provecho de una GPU como la RTX 3090, con logs mas limpios y mejor saturacion de VRAM, usa:
+
+```bash
+docker build -t jeisonrosario66/curso-transcriber:0.7 .
+docker push jeisonrosario66/curso-transcriber:0.7
+```
+
+La version `0.7`:
+
+- mantiene la imagen liviana
+- sigue instalando `cublas/cudnn` bajo demanda en el primer arranque
+- usa procesos separados cuando corres en GPU con `parallel-files > 1`
+- deja logs mas limpios, ocultando el ruido de `faster-whisper`, `onnxruntime` y librerias HTTP
+- agrega partes de estado periodicos con `STATUS_INTERVAL_SECONDS`
+- mejora el aprovechamiento real de VRAM frente al enfoque anterior con threads compartiendo un solo modelo
+
 Correrla montando carpetas locales:
 
 ```bash
@@ -257,6 +280,24 @@ docker run --rm \
   -v /ruta/a/subtitulos:/data/output \
   curso-transcriber /data/input --profile local --model tiny --parallel-files 1 -o /data/output
 ```
+
+## Cloud Sync y espacio en disco
+
+Cuando usas Cloud Sync en Vast.ai, los archivos si se copian al almacenamiento local de la instancia.
+
+En la practica eso significa:
+
+- si tu carpeta de Google Drive pesa `50 GB`, necesitas aproximadamente esos `50 GB` libres dentro de la maquina
+- conviene dejar margen adicional para:
+  - el propio contenedor e imagen
+  - caches temporales de Python/pip
+  - audio temporal y trabajo de ffmpeg
+  - la carpeta de salida
+
+Regla practica:
+
+- para `50 GB` de videos, intenta tener al menos `60-70 GB` libres si quieres trabajar comodo
+- si la instancia solo tiene `50 GB` de disco, vas muy justo o directamente corto
 
 En Vast.ai la idea es la misma, pero cambiando el perfil y modelo:
 

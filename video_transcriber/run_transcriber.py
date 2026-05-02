@@ -56,6 +56,10 @@ def build_argv_from_env(values: dict[str, str]) -> list[str]:
     if parallel_files:
         argv.extend(["--parallel-files", parallel_files])
 
+    status_interval = values.get("STATUS_INTERVAL_SECONDS", "").strip()
+    if status_interval:
+        argv.extend(["--status-interval", status_interval])
+
     return argv
 
 
@@ -69,6 +73,7 @@ def merge_env_sources(file_values: dict[str, str]) -> dict[str, str]:
         "LANGUAGE",
         "OVERWRITE",
         "PARALLEL_FILES",
+        "STATUS_INTERVAL_SECONDS",
     ):
         env_value = os.environ.get(key)
         if env_value is not None and env_value != "":
