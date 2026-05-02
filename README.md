@@ -1,25 +1,25 @@
-# 🎬 Course Video Splitter (CLI)
+# Herramientas para cursos en video
 
-Herramienta simple en Python para dividir cursos en video (.mp4) en capítulos usando un archivo `content.txt` con timestamps.
+Este repo ahora tiene dos utilidades separadas:
 
----
+- `split_course.py`: divide cursos largos en capitulos usando `content.txt` o `timing.txt`
+- `video_transcriber/`: mini proyecto separado para transcribir videos y generar `.srt`
 
-## 🚀 Características
+## Splitter
 
-- Divide videos automáticamente por volumen
-- Usa timestamps definidos manualmente
-- No pierde calidad (`ffmpeg -c copy`)
-- Organiza salida en carpetas (`volume_X`)
-- Funciona por línea de comandos
-
----
-
-## 📦 Requisitos
-
-- Python 3.8+
-- ffmpeg
-
-### Instalar ffmpeg (Linux)
+Ejemplo:
 
 ```bash
-sudo apt install ffmpeg
+python3 split_course.py /ruta/base
+```
+
+## Transcriptor
+
+La guia completa esta en [video_transcriber/README.md](/home/bigdev/github/dividir_videos_cursos/video_transcriber/README.md).
+
+Ejemplo rapido para tu PC:
+
+```bash
+cd video_transcriber
+python3 transtribir.py /ruta/a/videos --profile local --model tiny -o /ruta/a/subtitulos
+```
