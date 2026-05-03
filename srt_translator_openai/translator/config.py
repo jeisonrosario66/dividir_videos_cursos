@@ -43,6 +43,7 @@ class Settings:
     output_dir: Path
     work_dir: Path
     overwrite: bool
+    sync_concurrency: int
     chunk_max_chars: int
     max_segments_per_chunk: int
     max_glossary_lines_per_chunk: int
@@ -80,6 +81,7 @@ def load_settings() -> Settings:
         output_dir=output_dir,
         work_dir=work_dir,
         overwrite=_read_bool("OVERWRITE", False),
+        sync_concurrency=max(1, _read_int("SYNC_CONCURRENCY", 4)),
         chunk_max_chars=_read_int("CHUNK_MAX_CHARS", 4500),
         max_segments_per_chunk=_read_int("MAX_SEGMENTS_PER_CHUNK", 80),
         max_glossary_lines_per_chunk=_read_int("MAX_GLOSSARY_LINES_PER_CHUNK", 60),

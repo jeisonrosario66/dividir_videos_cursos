@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import re
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from pathlib import Path
 
 from translator.chunking import chunk_entries, file_id_from_path
@@ -80,6 +83,56 @@ class ChunkValidationError(ValueError):
     pass
 
 
+@dataclass(frozen=True)
+class ChunkResult:
+    translated_map: dict[int, str]
+    api_calls: int
+    cache_hits: int
+
+
+@dataclass(frozen=True)
+class FileResult:
+    relative_path: Path
+    translated_chunks: int
+    cached_chunks: int
+
+
+class SharedResponseCache:
+    def __init__(self, payload: dict):
+        self.payload = payload
+        self.lock = threading.Lock()
+        self.inflight: dict[str, threading.Event] = {}
+
+    def claim(self, key: str):
+        while True:
+            with self.lock:
+                cached = self.payload["responses"].get(key)
+                if cached is not None:
+                    return "cached", cached
+
+                event = self.inflight.get(key)
+                if event is None:
+                    event = threading.Event()
+                    self.inflight[key] = event
+                    return "owner", event
+
+            event.wait()
+
+    def store(self, key: str, value: dict) -> None:
+        with self.lock:
+            self.payload["responses"][key] = value
+
+    def discard(self, key: str) -> None:
+        with self.lock:
+            self.payload["responses"].pop(key, None)
+
+    def release(self, key: str) -> None:
+        with self.lock:
+            event = self.inflight.pop(key, None)
+        if event is not None:
+            event.set()
+
+
 def _load_json(path: Path, default: dict) -> dict:
     if not path.exists():
         return default
@@ -127,7 +180,8 @@ def _looks_too_english(source_text: str, translated_text: str) -> bool:
     if english_hits >= 4 and english_hits > spanish_hits + 1:
         return True
 
-    overlap = sum(token in set(source_tokens) for token in translated_tokens)
+    source_token_set = set(source_tokens)
+    overlap = sum(token in source_token_set for token in translated_tokens)
     if overlap >= max(6, len(translated_tokens) // 2) and english_hits >= 3 and spanish_hits <= 1:
         return True
 
@@ -181,8 +235,8 @@ def _translate_chunk_recursive(
     course_context: str,
     glossary_lines: list[str],
     chunk,
-    cache: dict,
-) -> tuple[dict[int, str], int, int]:
+    cache: SharedResponseCache,
+) -> ChunkResult:
     chunk_text = "\n".join(entry.text for entry in chunk.entries)
     filtered_glossary = select_glossary_for_text(
         glossary_lines,
@@ -201,17 +255,25 @@ def _translate_chunk_recursive(
         user_payload=payload,
     )
 
-    response_json = cache["responses"].get(dedup_key)
-    if response_json is not None:
+    claimed_kind, claimed_value = cache.claim(dedup_key)
+    if claimed_kind == "cached":
         try:
-            translated = _validated_translations(chunk, response_json)
-            return translated, 0, 1
+            translated = _validated_translations(chunk, claimed_value)
+            return ChunkResult(translated_map=translated, api_calls=0, cache_hits=1)
         except ChunkValidationError:
-            cache["responses"].pop(dedup_key, None)
+            cache.discard(dedup_key)
             LOGGER.warning(
                 "Cache invalida descartada | archivo=%s | chunk=%s",
                 chunk.relative_path,
                 chunk.chunk_id,
+            )
+            return _translate_chunk_recursive(
+                client=client,
+                settings=settings,
+                course_context=course_context,
+                glossary_lines=glossary_lines,
+                chunk=chunk,
+                cache=cache,
             )
 
     try:
@@ -225,8 +287,8 @@ def _translate_chunk_recursive(
         )
         response_json = json.loads(_extract_output_text(response))
         translated = _validated_translations(chunk, response_json)
-        cache["responses"][dedup_key] = response_json
-        return translated, 1, 0
+        cache.store(dedup_key, response_json)
+        return ChunkResult(translated_map=translated, api_calls=1, cache_hits=0)
     except Exception as exc:
         if len(chunk.entries) <= 1:
             raise
@@ -259,7 +321,7 @@ def _translate_chunk_recursive(
             entries=list(right_entries),
         )
 
-        left_map, left_api, left_cache = _translate_chunk_recursive(
+        left_result = _translate_chunk_recursive(
             client=client,
             settings=settings,
             course_context=course_context,
@@ -267,7 +329,7 @@ def _translate_chunk_recursive(
             chunk=left_chunk,
             cache=cache,
         )
-        right_map, right_api, right_cache = _translate_chunk_recursive(
+        right_result = _translate_chunk_recursive(
             client=client,
             settings=settings,
             course_context=course_context,
@@ -276,82 +338,130 @@ def _translate_chunk_recursive(
             cache=cache,
         )
         merged = {}
-        merged.update(left_map)
-        merged.update(right_map)
-        return merged, left_api + right_api, left_cache + right_cache
+        merged.update(left_result.translated_map)
+        merged.update(right_result.translated_map)
+        return ChunkResult(
+            translated_map=merged,
+            api_calls=left_result.api_calls + right_result.api_calls,
+            cache_hits=left_result.cache_hits + right_result.cache_hits,
+        )
+    finally:
+        cache.release(dedup_key)
+
+
+def _translate_one_file(
+    *,
+    settings: Settings,
+    glossary_lines: list[str],
+    cache: SharedResponseCache,
+    srt_path: Path,
+) -> FileResult | None:
+    from openai import OpenAI
+
+    relative_path = srt_path.relative_to(settings.input_dir)
+    output_path = settings.output_dir / relative_path
+    if output_path.exists() and not settings.overwrite:
+        LOGGER.info("SKIP | salida ya existe | %s", relative_path.as_posix())
+        return None
+
+    client = OpenAI(api_key=settings.openai_api_key)
+    entries = parse_srt(srt_path)
+    file_id = file_id_from_path(relative_path)
+    chunks = chunk_entries(
+        file_id=file_id,
+        relative_path=relative_path,
+        entries=entries,
+        max_chars=settings.chunk_max_chars,
+        max_segments=settings.max_segments_per_chunk,
+    )
+
+    translated_chunks = 0
+    cached_chunks = 0
+    translated_by_index: dict[int, str] = {}
+
+    for position, chunk in enumerate(chunks, start=1):
+        result = _translate_chunk_recursive(
+            client=client,
+            settings=settings,
+            course_context=settings.course_context,
+            glossary_lines=glossary_lines,
+            chunk=chunk,
+            cache=cache,
+        )
+        translated_chunks += result.api_calls
+        cached_chunks += result.cache_hits
+        translated_by_index.update(result.translated_map)
+
+        LOGGER.info(
+            "OK | archivo=%s | chunk=%s/%s | segmentos=%s | cache=%s",
+            relative_path.as_posix(),
+            position,
+            len(chunks),
+            len(chunk.entries),
+            "si" if result.api_calls == 0 else "no",
+        )
+
+    translated_entries = [
+        SubtitleEntry(
+            index=entry.index,
+            start=entry.start,
+            end=entry.end,
+            text=translated_by_index.get(entry.index, entry.text),
+        )
+        for entry in entries
+    ]
+    write_srt(output_path, translated_entries)
+    return FileResult(
+        relative_path=relative_path,
+        translated_chunks=translated_chunks,
+        cached_chunks=cached_chunks,
+    )
 
 
 def translate_sync(settings: Settings) -> int:
-    from openai import OpenAI
-
-    client = OpenAI(api_key=settings.openai_api_key)
     glossary_lines = load_glossary(settings.glossary_path)
     cache_path = settings.work_dir / "translation_cache.json"
-    cache = _load_json(cache_path, {"responses": {}})
+    cache = SharedResponseCache(_load_json(cache_path, {"responses": {}}))
+    srt_files = _iter_srt_files(settings.input_dir)
+
+    LOGGER.info(
+        "Inicio sync | archivos=%s | concurrencia=%s | output=%s",
+        len(srt_files),
+        settings.sync_concurrency,
+        settings.output_dir,
+    )
 
     translated_files = 0
     translated_chunks = 0
     cached_chunks = 0
 
-    for srt_path in _iter_srt_files(settings.input_dir):
-        relative_path = srt_path.relative_to(settings.input_dir)
-        output_path = settings.output_dir / relative_path
-        if output_path.exists() and not settings.overwrite:
-            LOGGER.info("SKIP | salida ya existe | %s", relative_path.as_posix())
-            continue
-
-        entries = parse_srt(srt_path)
-        file_id = file_id_from_path(relative_path)
-        chunks = chunk_entries(
-            file_id=file_id,
-            relative_path=relative_path,
-            entries=entries,
-            max_chars=settings.chunk_max_chars,
-            max_segments=settings.max_segments_per_chunk,
-        )
-
-        translated_by_index: dict[int, str] = {}
-        for position, chunk in enumerate(chunks, start=1):
-            translated_map, api_calls, cache_hits = _translate_chunk_recursive(
-                client=client,
+    with ThreadPoolExecutor(max_workers=settings.sync_concurrency) as executor:
+        futures = [
+            executor.submit(
+                _translate_one_file,
                 settings=settings,
-                course_context=settings.course_context,
                 glossary_lines=glossary_lines,
-                chunk=chunk,
                 cache=cache,
+                srt_path=srt_path,
             )
-            translated_chunks += api_calls
-            cached_chunks += cache_hits
-            from_cache = api_calls == 0
-            translated_by_index.update(translated_map)
-
-            LOGGER.info(
-                "OK | archivo=%s | chunk=%s/%s | segmentos=%s | cache=%s",
-                relative_path.as_posix(),
-                position,
-                len(chunks),
-                len(chunk.entries),
-                "si" if from_cache else "no",
-            )
-
-        translated_entries = [
-            SubtitleEntry(
-                index=entry.index,
-                start=entry.start,
-                end=entry.end,
-                text=translated_by_index.get(entry.index, entry.text),
-            )
-            for entry in entries
+            for srt_path in srt_files
         ]
-        write_srt(output_path, translated_entries)
-        translated_files += 1
 
-    _save_json(cache_path, cache)
+        for future in as_completed(futures):
+            result = future.result()
+            if result is None:
+                continue
+            translated_files += 1
+            translated_chunks += result.translated_chunks
+            cached_chunks += result.cached_chunks
+
+    _save_json(cache_path, cache.payload)
     LOGGER.info(
-        "Proceso finalizado | archivos=%s | chunks_api=%s | chunks_cache=%s | output=%s",
+        "Proceso finalizado | archivos=%s | chunks_api=%s | chunks_cache=%s | concurrencia=%s | output=%s",
         translated_files,
         translated_chunks,
         cached_chunks,
+        settings.sync_concurrency,
         settings.output_dir,
     )
     return 0

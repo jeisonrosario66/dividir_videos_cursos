@@ -29,6 +29,7 @@ def merge_env_sources(file_values: dict[str, str]) -> dict[str, str]:
         "WORK_DIR",
         "TRANSLATION_MODE",
         "OVERWRITE",
+        "SYNC_CONCURRENCY",
         "CHUNK_MAX_CHARS",
         "MAX_SEGMENTS_PER_CHUNK",
         "MAX_GLOSSARY_LINES_PER_CHUNK",

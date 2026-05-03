@@ -80,6 +80,7 @@ OUTPUT_DIR=/ruta/a/srt_es
 WORK_DIR=
 TRANSLATION_MODE=batch
 OVERWRITE=false
+SYNC_CONCURRENCY=4
 CHUNK_MAX_CHARS=4500
 MAX_SEGMENTS_PER_CHUNK=80
 MAX_GLOSSARY_LINES_PER_CHUNK=60
@@ -119,10 +120,17 @@ Si quieres el modo mas eficiente hoy, esta es mi recomendacion:
 
 - `TRANSLATION_MODE=sync`
 - `OPENAI_MODEL=gpt-4o-mini`
+- `SYNC_CONCURRENCY=4`
 - `MAX_GLOSSARY_LINES_PER_CHUNK=40` o `60`
 - deja `OVERWRITE=false`
 
 En la practica, `sync` mas cache y glosario filtrado suele ser mucho mas estable para ti ahora mismo que `batch`, y sigue siendo barato.
+
+`SYNC_CONCURRENCY` controla cuantas peticiones simultaneas hace el traductor en modo `sync`.
+
+- `4`: buen punto de partida para uso local
+- `6` u `8`: posibles si tu red y tus rate limits aguantan
+- si ves errores de rate limit, baja el valor
 
 ### Opcion 2: traduccion mas barata
 
