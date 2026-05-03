@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
-from dataclasses import dataclass
+from concurrent.futures.process import BrokenProcessPool
+from dataclasses import dataclass, replace
 import logging
 from multiprocessing import get_context
 from pathlib import Path
@@ -18,6 +19,10 @@ _QUIET_LOGGERS = ("ctranslate2", "faster_whisper", "httpcore", "httpx", "onnxrun
 
 _WORKER_MODEL = None
 _WORKER_SETTINGS = None
+
+
+class GpuPoolInitializationError(RuntimeError):
+    pass
 
 
 @dataclass
@@ -198,6 +203,15 @@ class TranscriberService:
             skipped,
         )
 
+        if self.settings.execution_mode == "procesos-gpu":
+            return self.transcribe_with_gpu_fallback(
+                pending=pending,
+                started_at=started_at,
+                initial_processed=processed,
+                initial_skipped=skipped,
+                initial_failed=failed,
+            )
+
         if self.settings.execution_mode == "serie":
             for index, (media_path, destination) in enumerate(pending, start=1):
                 try:
@@ -209,7 +223,7 @@ class TranscriberService:
                         processed=processed,
                         failed=failed,
                         skipped=skipped,
-                        active=0,
+                        pending_count=total - index,
                         media_path=media_path,
                         result=result,
                         started_at=started_at,
@@ -222,7 +236,7 @@ class TranscriberService:
                         processed=processed,
                         failed=failed,
                         skipped=skipped,
-                        active=0,
+                        pending_count=total - index,
                         media_path=media_path,
                         started_at=started_at,
                         error=exc,
@@ -235,7 +249,50 @@ class TranscriberService:
             initial_processed=processed,
             initial_skipped=skipped,
             initial_failed=failed,
+            settings=self.settings,
         )
+
+    def transcribe_with_gpu_fallback(
+        self,
+        *,
+        pending: list[tuple[Path, Path]],
+        started_at: float,
+        initial_processed: int,
+        initial_skipped: int,
+        initial_failed: int,
+    ) -> tuple[int, int, int]:
+        requested_parallel = self.settings.effective_parallel_files
+
+        for parallel in range(requested_parallel, 1, -1):
+            trial_settings = replace(self.settings, parallel_files=parallel)
+            LOGGER.info(
+                "Pool GPU | intentando con paralelo=%s | modelo=%s",
+                trial_settings.effective_parallel_files,
+                trial_settings.selected_model,
+            )
+            try:
+                return self.transcribe_with_executor(
+                    pending=pending,
+                    started_at=started_at,
+                    initial_processed=initial_processed,
+                    initial_skipped=initial_skipped,
+                    initial_failed=initial_failed,
+                    settings=trial_settings,
+                )
+            except GpuPoolInitializationError:
+                next_parallel = parallel - 1
+                if next_parallel >= 1:
+                    LOGGER.warning(
+                        "OOM al inicializar %s modelos en GPU. Reintentando con paralelo=%s.",
+                        parallel,
+                        next_parallel,
+                    )
+
+        LOGGER.warning(
+            "La GPU no alcanza para multiproceso con este modelo. Continuando en modo serie sobre una sola instancia del modelo."
+        )
+        serial_service = TranscriberService(replace(self.settings, parallel_files=1))
+        return serial_service.transcribe_all()
 
     def transcribe_with_executor(
         self,
@@ -245,26 +302,27 @@ class TranscriberService:
         initial_processed: int,
         initial_skipped: int,
         initial_failed: int,
+        settings: TranscriptionSettings,
     ) -> tuple[int, int, int]:
         processed = initial_processed
         skipped = initial_skipped
         failed = initial_failed
         total = len(pending)
 
-        if self.settings.execution_mode == "procesos-gpu":
+        if settings.execution_mode == "procesos-gpu":
             executor = ProcessPoolExecutor(
-                max_workers=self.settings.effective_parallel_files,
+                max_workers=settings.effective_parallel_files,
                 mp_context=get_context("spawn"),
                 initializer=_worker_initializer,
-                initargs=(self.settings,),
+                initargs=(settings,),
             )
         else:
-            executor = ThreadPoolExecutor(max_workers=self.settings.effective_parallel_files)
+            executor = ThreadPoolExecutor(max_workers=settings.effective_parallel_files)
 
         with executor:
             future_map = {}
             for media_path, destination in pending:
-                if self.settings.execution_mode == "procesos-gpu":
+                if settings.execution_mode == "procesos-gpu":
                     future = executor.submit(_worker_transcribe, str(media_path), str(destination))
                 else:
                     future = executor.submit(self.transcribe_one, media_path, destination)
@@ -287,15 +345,16 @@ class TranscriberService:
                         processed=processed,
                         failed=failed,
                         skipped=skipped,
-                        active=len(pending_futures),
+                        pending_count=len(pending_futures),
                         started_at=started_at,
+                        parallel=settings.effective_parallel_files,
                     )
                     continue
 
                 for future in done:
                     media_path = future_map[future]
                     completed += 1
-                    active = len(pending_futures)
+                    pending_count = len(pending_futures)
                     try:
                         result = future.result()
                         processed += 1
@@ -305,12 +364,23 @@ class TranscriberService:
                             processed=processed,
                             failed=failed,
                             skipped=skipped,
-                            active=active,
+                            pending_count=pending_count,
                             media_path=media_path,
                             result=result,
                             started_at=started_at,
+                            parallel=settings.effective_parallel_files,
                         )
+                    except BrokenProcessPool as exc:
+                        raise GpuPoolInitializationError("El pool GPU se rompio al inicializar workers.") from exc
                     except Exception as exc:
+                        if (
+                            settings.execution_mode == "procesos-gpu"
+                            and processed == initial_processed
+                            and "terminated abruptly while the future was running or pending" in str(exc)
+                        ):
+                            raise GpuPoolInitializationError(
+                                "Los workers GPU no lograron inicializar el modelo."
+                            ) from exc
                         failed += 1
                         self.log_failure(
                             current=completed,
@@ -318,10 +388,11 @@ class TranscriberService:
                             processed=processed,
                             failed=failed,
                             skipped=skipped,
-                            active=active,
+                            pending_count=pending_count,
                             media_path=media_path,
                             started_at=started_at,
                             error=exc,
+                            parallel=settings.effective_parallel_files,
                         )
 
         return processed, skipped, failed
@@ -345,18 +416,20 @@ class TranscriberService:
         processed: int,
         failed: int,
         skipped: int,
-        active: int,
+        pending_count: int,
         started_at: float,
+        parallel: int,
     ) -> None:
         percent = (current / total) * 100 if total else 100.0
         elapsed = monotonic() - started_at
         eta = _estimated_remaining(elapsed, current, total)
         LOGGER.info(
-            "Estado | %s/%s (%.1f%%) | activas=%s | ok=%s | fail=%s | skip=%s | transcurrido=%s | eta=%s",
+            "Estado | %s/%s (%.1f%%) | workers=%s | pendientes=%s | ok=%s | fail=%s | skip=%s | transcurrido=%s | eta=%s",
             current,
             total,
             percent,
-            active,
+            parallel,
+            pending_count,
             processed,
             failed,
             skipped,
@@ -372,20 +445,22 @@ class TranscriberService:
         processed: int,
         failed: int,
         skipped: int,
-        active: int,
+        pending_count: int,
         media_path: Path,
         result: TranscriptionResult,
         started_at: float,
+        parallel: int,
     ) -> None:
         percent = (current / total) * 100 if total else 100.0
         elapsed = monotonic() - started_at
         eta = _estimated_remaining(elapsed, current, total)
         LOGGER.info(
-            "OK     | %s/%s (%.1f%%) | activas=%s | ok=%s | fail=%s | skip=%s | archivo=%s | idioma=%s | media=%s | transcurrido=%s | eta=%s",
+            "OK     | %s/%s (%.1f%%) | workers=%s | pendientes=%s | ok=%s | fail=%s | skip=%s | archivo=%s | idioma=%s | media=%s | transcurrido=%s | eta=%s",
             current,
             total,
             percent,
-            active,
+            parallel,
+            pending_count,
             processed,
             failed,
             skipped,
@@ -404,20 +479,22 @@ class TranscriberService:
         processed: int,
         failed: int,
         skipped: int,
-        active: int,
+        pending_count: int,
         media_path: Path,
         started_at: float,
         error: Exception,
+        parallel: int,
     ) -> None:
         percent = (current / total) * 100 if total else 100.0
         elapsed = monotonic() - started_at
         eta = _estimated_remaining(elapsed, current, total)
         LOGGER.error(
-            "FAIL   | %s/%s (%.1f%%) | activas=%s | ok=%s | fail=%s | skip=%s | archivo=%s | error=%s | transcurrido=%s | eta=%s",
+            "FAIL   | %s/%s (%.1f%%) | workers=%s | pendientes=%s | ok=%s | fail=%s | skip=%s | archivo=%s | error=%s | transcurrido=%s | eta=%s",
             current,
             total,
             percent,
-            active,
+            parallel,
+            pending_count,
             processed,
             failed,
             skipped,

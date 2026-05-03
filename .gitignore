@@ -8,3 +8,6 @@ __pycache__/
 
 video_transcriber/subtitulos/
 video_transcriber/test_data/
+
+srt_translator_openai/output/
+srt_translator_openai/input/

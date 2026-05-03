@@ -1,0 +1,557 @@
+# Preferred keep-as-is terms
+KEEP: reverse de la riva
+KEEP: de la riva
+KEEP: x-guard
+KEEP: reverse x
+KEEP: single leg x
+KEEP: SLX
+KEEP: k-guard
+KEEP: lasso guard
+KEEP: worm guard
+KEEP: squid guard
+KEEP: octopus guard
+KEEP: z-guard
+KEEP: shin-to-shin
+KEEP: butterfly hook
+KEEP: crossface
+KEEP: underhook
+KEEP: overhook
+KEEP: whizzer
+KEEP: body lock
+KEEP: seatbelt
+KEEP: gift wrap
+KEEP: north south
+KEEP: side control
+KEEP: headquarters
+KEEP: leg drag
+KEEP: toreando
+KEEP: over under
+KEEP: knee cut
+KEEP: knee slice
+KEEP: x-pass
+KEEP: long step
+KEEP: smash pass
+KEEP: body lock pass
+KEEP: ashi garami
+KEEP: cross ashi
+KEEP: outside ashi
+KEEP: inside ashi
+KEEP: saddle
+KEEP: honey hole
+KEEP: 411
+KEEP: inside sankaku
+KEEP: outside sankaku
+KEEP: 50/50
+KEEP: knee line
+KEEP: heel exposure
+KEEP: reap
+KEEP: berimbolo
+KEEP: crab ride
+KEEP: truck
+KEEP: twister
+KEEP: heel hook
+KEEP: inside heel hook
+KEEP: outside heel hook
+KEEP: toe hold
+KEEP: kneebar
+KEEP: calf slicer
+KEEP: bicep slicer
+KEEP: kimura
+KEEP: americana
+KEEP: armbar
+KEEP: triangle
+KEEP: omoplata
+KEEP: darce
+KEEP: anaconda
+KEEP: tarikoplata
+KEEP: estima lock
+KEEP: granby
+KEEP: heist
+KEEP: wrestle up
+KEEP: snap down
+KEEP: duck under
+KEEP: high crotch
+KEEP: low single
+KEEP: ankle pick
+KEEP: front headlock
+KEEP: arm drag
+KEEP: kiss of the dragon
+KEEP: double trouble
+KEEP: double saddle
+
+# Preferred renderings
+PREFER: guard => guardia
+PREFER: open guard => guardia abierta
+PREFER: closed guard => guardia cerrada
+PREFER: reverse closed guard => guardia cerrada inversa
+PREFER: half guard => media guardia
+PREFER: butterfly guard => guardia mariposa
+PREFER: seated guard => guardia sentada
+PREFER: supine guard => guardia supina
+PREFER: top position => posicion superior
+PREFER: bottom position => posicion inferior
+PREFER: inside position => posicion interna
+PREFER: outside position => posicion externa
+PREFER: mount => montada
+PREFER: back control => control de espalda
+PREFER: knee on belly => rodilla al abdomen
+PREFER: technical mount => montada tecnica
+PREFER: crucifix => crucifijo
+PREFER: hip control => control de cadera
+PREFER: head control => control de cabeza
+PREFER: wrist control => control de muneca
+PREFER: elbow control => control de codo
+PREFER: guard pass => pase de guardia
+PREFER: pressure pass => pase de presion
+PREFER: stack pass => stack pass
+PREFER: sweep => barrida
+PREFER: sweeps => barridas
+PREFER: off-balance => desequilibrar
+PREFER: off-balance sweep => barrida por desequilibrio
+PREFER: takedown => derribo
+PREFER: submission => sumision
+PREFER: submissions => sumisiones
+PREFER: straight ankle lock => llave de tobillo recta
+PREFER: rear naked choke => mataleon
+PREFER: arm triangle => triangulo de brazo
+PREFER: hip escape => escape de cadera
+PREFER: bridge => puente
+PREFER: technical stand up => levantada tecnica
+PREFER: angle off => sacar angulo
+PREFER: turn the corner => girar la esquina
+PREFER: post => apoyo
+PREFER: posting hand => mano de apoyo
+PREFER: frame => frame
+PREFER: frames => frames
+PREFER: wedge => cuña
+PREFER: grips => agarres
+PREFER: grip => agarre
+PREFER: hook => gancho
+PREFER: hooks => ganchos
+PREFER: hips => caderas
+PREFER: shoulders => hombros
+PREFER: far side => lado lejano
+PREFER: near side => lado cercano
+PREFER: far hip => cadera lejana
+PREFER: near hip => cadera cercana
+PREFER: top leg => pierna de arriba
+PREFER: bottom leg => pierna de abajo
+PREFER: threat => amenaza
+PREFER: threaten => amenazar
+PREFER: control the distance => controlar la distancia
+PREFER: make space => crear espacio
+PREFER: break posture => romper la postura
+PREFER: stay heavy => mantente pesado
+PREFER: keep the pressure => mantén la presion
+PREFER: be patient => ten paciencia
+
+# Avoid literal or awkward renderings
+AVOID: guard => guarda
+AVOID: frame => marco
+AVOID: frames => marcos
+AVOID: hook => anzuelo
+AVOID: hooks => anzuelos
+AVOID: underhook => gancho por debajo
+AVOID: overhook => gancho por encima
+AVOID: body lock => candado corporal
+AVOID: crossface => cara cruzada
+AVOID: seatbelt => cinturon de seguridad
+AVOID: whizzer => batidor
+AVOID: knee line => linea de la rodilla literal sin contexto
+AVOID: heel exposure => exposicion del talon literal sin contexto
+AVOID: toreando => toreando guardia literal si suena raro
+AVOID: smash pass => pase aplastante
+AVOID: knee cut => corte de rodilla
+AVOID: long step => paso largo literal sin contexto
+AVOID: x-guard => guardia x
+AVOID: single leg x => x de una sola pierna
+AVOID: reverse de la riva => de la riva inversa si el curso usa el nombre ingles
+AVOID: kiss of the dragon => beso del dragon
+AVOID: saddle => silla de montar
+AVOID: ashi garami => enredo de pierna traducido si el nombre tecnico importa
+AVOID: heel hook => gancho de talon
+AVOID: kimura => llave kimura
+AVOID: armbar => barra de brazo
+AVOID: triangle => triangulo de piernas
+AVOID: omoplata => escapula
+AVOID: darce => darce choke si no aporta nada
+AVOID: rear naked choke => estrangulacion desnuda trasera
+AVOID: mat return => retorno al tapete
+AVOID: scramble => revuelto
+AVOID: wrestle up => luchar hacia arriba
+AVOID: technical stand up => pararse tecnicamente
+
+# General conventions
+Brazilian Jiu-Jitsu => Jiu-Jitsu brasileño
+Jiu-Jitsu => Jiu-Jitsu
+BJJ => BJJ
+grappling => grappling
+grappler => grappler
+mat return => regreso al suelo
+scramble => scramble
+scrambles => scrambles
+exchange => intercambio
+sequence => secuencia
+chain wrestle => encadenar lucha
+chain wrestling => lucha encadenada
+transition => transicion
+transitions => transiciones
+reaction => reaccion
+timing => timing
+tempo => ritmo
+off-balance => desequilibrar
+misdirection => amago
+adjustment => ajuste
+detail => detalle
+concept => concepto
+system => sistema
+mechanics => mecanica
+
+# Positional families
+position => posicion
+positions => posiciones
+guard => guardia
+open guard => guardia abierta
+closed guard => guardia cerrada
+reverse closed guard => guardia cerrada inversa
+high guard => guardia alta
+low guard => guardia baja
+half guard => media guardia
+deep half => deep half
+quarter guard => quarter guard
+butterfly guard => guardia mariposa
+half butterfly => media mariposa
+butterfly half => media mariposa
+seated guard => guardia sentada
+supine guard => guardia supina
+shin-to-shin => shin-to-shin
+single leg x => single leg x
+SLX => single leg x
+x-guard => x-guard
+reverse x => reverse x
+de la riva => de la riva
+reverse de la riva => reverse de la riva
+RDLR => reverse de la riva
+DLR => de la riva
+k-guard => k-guard
+lasso guard => guardia lasso
+lapel guard => guardia con solapa
+worm guard => worm guard
+squid guard => squid guard
+spider guard => guardia spider
+collar sleeve => collar sleeve
+sit-up guard => guardia de incorporacion
+octopus guard => octopus guard
+z-guard => z-guard
+knee shield => knee shield
+long range guard => guardia de larga distancia
+inside position => posicion interna
+outside position => posicion externa
+top position => posicion superior
+bottom position => posicion inferior
+dominant position => posicion dominante
+neutral position => posicion neutral
+
+# Pins and controls
+pin => control
+pinning position => posicion de control
+side control => side control
+north south => north south
+mount => montada
+back control => control de espalda
+rear mount => espalda
+knee on belly => rodilla al abdomen
+knee on stomach => rodilla al abdomen
+technical mount => montada tecnica
+s-mount => s-mount
+twister side control => twister side control
+gift wrap => gift wrap
+crucifix => crucifijo
+wrist ride => control de muneca
+leg ride => leg ride
+turk => turk
+hip ride => control de cadera
+body lock => body lock
+seatbelt => seatbelt
+harness grip => seatbelt
+crossface => crossface
+cross-face => crossface
+shoulder pressure => presion de hombro
+head control => control de cabeza
+hip control => control de cadera
+elbow knee connection => conexion codo-rodilla
+inside tie => inside tie
+collar tie => collar tie
+two-on-one => two-on-one
+arm drag => arm drag
+snap down => snap down
+
+# Leg entanglements
+leg entanglement => enredo de piernas
+leg entanglements => enredos de piernas
+ashi garami => ashi garami
+cross ashi => cross ashi
+outside ashi => outside ashi
+inside ashi => inside ashi
+50/50 => 50/50
+saddle => saddle
+honey hole => saddle
+411 => saddle
+double trouble => double trouble
+double saddle => double saddle
+inside sankaku => inside sankaku
+outside sankaku => outside sankaku
+reap => reap
+reaping position => posicion de reap
+knee line => linea de la rodilla
+heel exposure => exposicion del talon
+secondary leg => pierna secundaria
+primary leg => pierna primaria
+free leg => pierna libre
+secondary wedge => cuña secundaria
+
+# Common movements
+hip escape => escape de cadera
+shrimp => shrimp
+bridge => puente
+upa => upa
+sit out => sit out
+granby => granby
+invert => invertir
+inversion => inversion
+back step => backstep
+hip switch => cambio de cadera
+technical stand up => levantada tecnica
+stand up in base => levantarse con base
+heist => heist
+wrestle up => levantarse a luchar
+sit through => sit through
+circle out => salir en circulo
+turn the corner => girar la esquina
+angle off => sacar angulo
+post => post
+posting hand => mano de apoyo
+base => base
+posture => postura
+stack => apilar
+staple => grapar
+sprawl => sprawl
+sprawl back => sprawl hacia atras
+drop step => paso de caida
+step over => pasar por encima
+pummel => pummeling
+repummel => repummeling
+thread the needle => meter la aguja
+backdoor => backdoor
+peek out => peek out
+
+# Grips, hooks, wedges, frames
+grip => agarre
+grips => agarres
+hook => gancho
+hooks => ganchos
+underhook => underhook
+overhook => overhook
+whizzer => whizzer
+collar grip => agarre de cuello
+sleeve grip => agarre de manga
+lapel grip => agarre de solapa
+pants grip => agarre de pantalon
+ankle grip => agarre al tobillo
+wrist control => control de muneca
+elbow control => control de codo
+head post => apoyo en la cabeza
+frame => frame
+frames => frames
+wedge => cuña
+inside wedge => cuña interna
+outside wedge => cuña externa
+shin frame => frame con la espinilla
+knee wedge => cuña de rodilla
+butterfly hook => gancho mariposa
+instep hook => gancho con el empeine
+toe post => apoyo con los dedos
+heel post => apoyo con el talon
+elbow post => apoyo de codo
+cross grip => agarre cruzado
+gable grip => gable grip
+s-grip => s-grip
+monkey grip => monkey grip
+pistol grip => pistol grip
+cupping grip => agarre en cuchara
+
+# Passing
+pass => pase
+guard pass => pase de guardia
+headquarters => headquarters
+toreando => toreando
+bullfighter pass => pase toreando
+leg drag => leg drag
+body lock pass => pase con body lock
+smash pass => smash pass
+over under pass => over under
+double under pass => double under
+knee cut => knee cut
+knee slice => knee slice
+x-pass => x-pass
+long step => long step
+stack pass => stack pass
+pressure pass => pase de presion
+float pass => float pass
+backstep pass => pase con backstep
+tripod pass => tripod pass
+weave pass => weave pass
+fold pass => fold pass
+camp pass => camp pass
+shoulder crunch pass => pase con shoulder crunch
+
+# Sweeps and reversals
+sweep => barrida
+sweeps => barridas
+reversal => reversal
+scissor sweep => barrida de tijera
+flower sweep => flower sweep
+pendulum sweep => pendulum sweep
+hip bump => hip bump
+butterfly sweep => barrida mariposa
+elevator sweep => barrida elevadora
+technical standup sweep => barrida con levantada tecnica
+ankle pick => ankle pick
+dummy sweep => dummy sweep
+hook sweep => barrida con gancho
+tilt sweep => tilt sweep
+kiss of the dragon => kiss of the dragon
+off-balance sweep => barrida por desequilibrio
+overhead sweep => barrida por encima
+balloon sweep => balloon sweep
+waiter sweep => waiter sweep
+pendulum motion => movimiento pendular
+
+# Takedowns and wrestling
+takedown => derribo
+shot => ataque a las piernas
+double leg => double leg
+single leg => single leg
+high crotch => high crotch
+low single => low single
+ankle pick => ankle pick
+duck under => duck under
+snap down => snap down
+go behind => tomar la espalda por detras
+front headlock => front headlock
+head outside single => single leg con la cabeza por fuera
+head inside single => single leg con la cabeza por dentro
+running the pipe => running the pipe
+crackdown => crackdown
+finish the takedown => finalizar el derribo
+mat return => regreso al suelo
+stand to base => ponerse de pie con base
+
+# Submissions
+submission => sumision
+submissions => sumisiones
+heel hook => heel hook
+inside heel hook => inside heel hook
+outside heel hook => outside heel hook
+straight ankle lock => llave de tobillo recta
+ankle lock => llave de tobillo
+toe hold => toe hold
+kneebar => kneebar
+calf slicer => calf slicer
+bicep slicer => bicep slicer
+kimura => kimura
+americana => americana
+straight armbar => armbar recto
+armbar => armbar
+triangle => triangulo
+rear naked choke => mataleon
+RNC => mataleon
+guillotine => guillotina
+high elbow guillotine => guillotina de codo alto
+darce => darce
+d'arce => darce
+anaconda => anaconda
+arm triangle => triangulo de brazo
+triangle choke => triangulo
+omoplata => omoplata
+estima lock => estima lock
+tarikoplata => tarikoplata
+shoulder lock => llave de hombro
+wrist lock => llave de muneca
+compression lock => llave de compresion
+
+# Body regions and orientation
+hips => caderas
+hip line => linea de la cadera
+shoulders => hombros
+head position => posicion de la cabeza
+chest to chest => pecho con pecho
+knee line => linea de la rodilla
+inside knee => rodilla interna
+outside knee => rodilla externa
+far hip => cadera lejana
+near hip => cadera cercana
+far side => lado lejano
+near side => lado cercano
+inside foot => pie interno
+outside foot => pie externo
+inside hand => mano interna
+outside hand => mano externa
+top leg => pierna de arriba
+bottom leg => pierna de abajo
+
+# Tactical language
+threat => amenaza
+threaten => amenazar
+expose => exponer
+hide the heel => esconder el talon
+clear the knee line => liberar la linea de la rodilla
+disconnect => desconectarse
+reconnect => reconectarse
+control the distance => controlar la distancia
+close the distance => cerrar la distancia
+make space => crear espacio
+take space away => quitar espacio
+chase the back => buscar la espalda
+break posture => romper la postura
+flatten out => aplanar
+pinch your knees => cerrar las rodillas
+flare the knee => abrir la rodilla
+turn your knee out => sacar la rodilla hacia afuera
+turn your knee in => meter la rodilla hacia adentro
+hide your elbow => esconder el codo
+win the inside space => ganar el espacio interior
+beat the frame => superar el frame
+deny the hips => negar las caderas
+track the hips => seguir las caderas
+follow the rotation => seguir la rotacion
+reset the position => reiniciar la posicion
+
+# Common coaching phrases
+stay tight => mantente cerrado
+stay heavy => mantente pesado
+keep the pressure => mantén la presion
+be patient => ten paciencia
+slow them down => frenalo
+dont rush => no te apresures
+make them carry your weight => haz que carguen tu peso
+win the grip fight => gana la pelea de agarres
+get underneath => metete por debajo
+get on top => ponte arriba
+come up on the elbow => sube al codo
+come up to the hand => sube a la mano
+bring your knees to your chest => lleva las rodillas al pecho
+pull your heels in => mete los talones
+elbows tight => codos cerrados
+head higher than the hips => cabeza mas alta que las caderas
+keep your knees connected => mantén las rodillas conectadas
+
+# Terms often better preserved
+ashi => ashi
+sankaku => sankaku
+berimbolo => berimbolo
+crab ride => crab ride
+truck => truck
+twister => twister
+false reap => false reap
+outside heel exposure => exposicion externa del talon
